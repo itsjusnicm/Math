@@ -2,124 +2,210 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>P3 Long Division (Column Method)</title>
+<title>Long Division Bus Stop Trainer</title>
+
 <style>
-body { font-family: Arial; text-align: center; background:#f7fbff; }
-.container { margin-top: 30px; }
+body { font-family: Arial; text-align:center; background:#eef6ff; }
+.container { margin-top:30px; }
 
 .division {
-    display: inline-block;
-    text-align: left;
-    font-size: 26px;
-    line-height: 40px;
+    display:inline-block;
+    font-size:28px;
+    margin:20px;
 }
 
-.row { display: flex; align-items: center; }
+.top { margin-left:40px; }
+.row { display:flex; align-items:center; justify-content:center; }
 
 .box {
-    width: 40px;
-    height: 40px;
-    text-align: center;
-    font-size: 20px;
-    margin: 2px;
+    width:40px; height:40px;
+    text-align:center;
+    font-size:20px;
+    margin:2px;
 }
 
-.hidden { visibility: hidden; }
+.highlight {
+    background: yellow;
+}
 
-button { margin-top: 15px; padding: 8px 15px; }
+.hidden { display:none; }
 
-.feedback { margin-top: 10px; font-size: 18px; }
+button { padding:8px 15px; margin-top:10px; }
+
+.feedback { margin-top:10px; font-size:18px; }
+
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<h2>Long Division (Show Your Working)</h2>
-<div id="question"></div>
+<h2>Bus Stop Long Division (P3)</h2>
+<div id="progress"></div>
 
 <div class="division">
 
-    <!-- Quotient row -->
-    <div class="row">
-        <span> </span>
+    <!-- Quotient -->
+    <div class="row top">
         <input class="box" id="q1">
         <input class="box" id="q2">
         <input class="box" id="q3">
     </div>
 
-    <!-- Main division line -->
+    <!-- Division line -->
     <div class="row">
         <span id="divisor"></span> ⟌ 
-        <span id="dividend"></span>
+        <span id="d1"></span>
+        <span id="d2"></span>
+        <span id="d3"></span>
     </div>
 
-    <!-- Step 1 -->
+    <!-- Working -->
     <div class="row">
         <span> </span>
-        <input class="box" id="m1a">
-        <input class="box" id="m1b">
-    </div>
-
-    <div class="row">
-        <span> </span>
-        <span>— — —</span>
-    </div>
-
-    <div class="row">
-        <span> </span>
-        <input class="box" id="s1a">
-        <input class="box" id="s1b">
+        <input class="box" id="work">
     </div>
 
 </div>
 
-<br>
-Remainder: <input id="r">
+<div id="stepText"></div>
 
+<input id="answerBox" class="box">
 <br>
-<button onclick="check()">Submit</button>
+<button onclick="submitStep()">OK</button>
 
 <div class="feedback" id="fb"></div>
-<div id="progress"></div>
+
+<div id="end" class="hidden">
+    <h3>Game Over</h3>
+    <div id="score"></div>
+    <button onclick="start()">Restart</button>
+</div>
 
 </div>
 
 <script>
-let divisor, dividend, quotient, remainder;
+let qn=0, score=0;
 
-function gen(){
-    divisor = Math.floor(Math.random()*8)+2;
-    quotient = Math.floor(Math.random()*90)+10;
-    dividend = divisor * quotient;
-    remainder = 0;
+let divisor, dividendDigits;
+let step=0;
 
-    document.getElementById("divisor").innerText = divisor;
-    document.getElementById("dividend").innerText = dividend;
+let currentValue;
+let quotientDigits=[];
+let remainder=0;
 
-    document.getElementById("question").innerText =
-        "Solve using long division:";
-
-    document.querySelectorAll("input").forEach(i=>i.value="");
+function start(){
+    qn=0; score=0;
+    document.getElementById("end").classList.add("hidden");
+    nextQuestion();
 }
 
-function check(){
-    let qInput =
-        document.getElementById("q1").value +
-        document.getElementById("q2").value +
-        document.getElementById("q3").value;
+function nextQuestion(){
+    step=0;
+    quotientDigits=[];
 
-    let rInput = parseInt(document.getElementById("r").value);
+    divisor = Math.floor(Math.random()*8)+2;
+    let dividend = Math.floor(Math.random()*900)+100;
+    dividendDigits = dividend.toString().split("").map(Number);
 
-    if(parseInt(qInput) === quotient && rInput === remainder){
-        document.getElementById("fb").innerText = "✅ Correct!";
-    } else {
-        document.getElementById("fb").innerText =
-            "❌ Answer: " + quotient;
+    document.getElementById("divisor").innerText = divisor;
+    document.getElementById("d1").innerText = dividendDigits[0];
+    document.getElementById("d2").innerText = dividendDigits[1];
+    document.getElementById("d3").innerText = dividendDigits[2];
+
+    document.querySelectorAll(".box").forEach(b=>b.value="");
+
+    remainder = 0;
+    currentValue = dividendDigits[0];
+
+    updateUI();
+}
+
+function updateUI(){
+    highlightDigit(step);
+
+    if(step===0){
+        document.getElementById("stepText").innerText =
+        "Divide first digit";
+    }
+    else if(step<=2){
+        document.getElementById("stepText").innerText =
+        "Divide, then bring down next digit";
+    }
+    else{
+        finish();
+    }
+
+    document.getElementById("progress").innerText =
+        "Qn " + (qn+1) + "/10";
+}
+
+function highlightDigit(i){
+    ["d1","d2","d3"].forEach(id=>document.getElementById(id).classList.remove("highlight"));
+    if(i<3){
+        document.getElementById("d"+(i+1)).classList.add("highlight");
     }
 }
 
-gen();
+function submitStep(){
+    let input = parseInt(document.getElementById("answerBox").value);
+    if(isNaN(input)) return;
+
+    let correct = Math.floor(currentValue / divisor);
+
+    if(input === correct){
+        quotientDigits.push(input);
+
+        remainder = currentValue % divisor;
+
+        if(step < 2){
+            currentValue = remainder*10 + dividendDigits[step+1];
+        }
+
+        document.getElementById("q"+(step+1)).value = input;
+
+        document.getElementById("fb").innerText = "✅ Correct";
+        step++;
+        document.getElementById("answerBox").value="";
+        updateUI();
+
+    } else {
+        document.getElementById("fb").innerText =
+            "❌ Try again";
+    }
+}
+
+function finish(){
+    let finalQ = quotientDigits.join("");
+    let actualQ = Math.floor(
+        (dividendDigits[0]*100 +
+         dividendDigits[1]*10 +
+         dividendDigits[2]) / divisor
+    );
+
+    if(parseInt(finalQ) === actualQ){
+        score++;
+        document.getElementById("fb").innerText="🎉 Well done!";
+    } else {
+        document.getElementById("fb").innerText=
+            "Answer: " + actualQ;
+    }
+
+    qn++;
+
+    setTimeout(()=>{
+        if(qn<10) nextQuestion();
+        else end();
+    },1200);
+}
+
+function end(){
+    document.getElementById("end").classList.remove("hidden");
+    document.getElementById("score").innerText =
+        "Score: " + score + "/10";
+}
+
+start();
 </script>
 
 </body>
