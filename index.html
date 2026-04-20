@@ -1,164 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>P3 Long Division Trainer</title>
+<title>P3 Long Division (Column Method)</title>
 <style>
-body { font-family: Arial; text-align: center; background:#f4f9ff; }
+body { font-family: Arial; text-align: center; background:#f7fbff; }
 .container { margin-top: 30px; }
-.division-box {
+
+.division {
     display: inline-block;
     text-align: left;
-    font-size: 22px;
-    margin: 20px;
+    font-size: 26px;
+    line-height: 40px;
 }
-.row { margin: 5px 0; }
-input {
-    width: 50px;
-    padding: 5px;
+
+.row { display: flex; align-items: center; }
+
+.box {
+    width: 40px;
+    height: 40px;
     text-align: center;
-    font-size: 16px;
+    font-size: 20px;
+    margin: 2px;
 }
-button { padding: 8px 15px; margin: 10px; }
-.feedback { font-size: 18px; margin-top: 10px; }
-.hint { color: #555; margin-top: 10px; }
+
+.hidden { visibility: hidden; }
+
+button { margin-top: 15px; padding: 8px 15px; }
+
+.feedback { margin-top: 10px; font-size: 18px; }
 </style>
 </head>
 
 <body>
 <div class="container">
-<h1>Long Division Trainer (P3)</h1>
 
-<div id="game">
-    <div id="question" style="font-size:26px;"></div>
+<h2>Long Division (Show Your Working)</h2>
+<div id="question"></div>
 
-    <div class="division-box">
-        <div class="row">Divide: <input id="d1"></div>
-        <div class="row">Multiply: <input id="m1"></div>
-        <div class="row">Subtract: <input id="s1"></div>
-        <div class="row">Bring down: <input id="b1"></div>
+<div class="division">
 
-        <hr>
-
-        <div class="row">Divide: <input id="d2"></div>
-        <div class="row">Multiply: <input id="m2"></div>
-        <div class="row">Subtract: <input id="s2"></div>
-        <div class="row">Bring down: <input id="b2"></div>
+    <!-- Quotient row -->
+    <div class="row">
+        <span> </span>
+        <input class="box" id="q1">
+        <input class="box" id="q2">
+        <input class="box" id="q3">
     </div>
 
-    <h3>Final Answer</h3>
-    Quotient: <input id="q">
-    Remainder: <input id="r">
+    <!-- Main division line -->
+    <div class="row">
+        <span id="divisor"></span> ⟌ 
+        <span id="dividend"></span>
+    </div>
 
-    <br>
-    <button onclick="check()">Submit</button>
-    <button onclick="showHint()">Hint</button>
+    <!-- Step 1 -->
+    <div class="row">
+        <span> </span>
+        <input class="box" id="m1a">
+        <input class="box" id="m1b">
+    </div>
 
-    <div class="feedback" id="fb"></div>
-    <div class="hint" id="hint"></div>
-    <div id="progress"></div>
+    <div class="row">
+        <span> </span>
+        <span>— — —</span>
+    </div>
+
+    <div class="row">
+        <span> </span>
+        <input class="box" id="s1a">
+        <input class="box" id="s1b">
+    </div>
+
 </div>
 
-<div id="end" style="display:none;">
-    <h2>Game Over</h2>
-    <p id="score"></p>
-    <button onclick="start()">Restart</button>
+<br>
+Remainder: <input id="r">
+
+<br>
+<button onclick="check()">Submit</button>
+
+<div class="feedback" id="fb"></div>
+<div id="progress"></div>
+
 </div>
 
 <script>
-let qn=0, score=0;
-let divisor, dividend;
-
-let steps={};
+let divisor, dividend, quotient, remainder;
 
 function gen(){
     divisor = Math.floor(Math.random()*8)+2;
-    dividend = Math.floor(Math.random()*900)+100;
+    quotient = Math.floor(Math.random()*90)+10;
+    dividend = divisor * quotient;
+    remainder = 0;
 
-    let temp = dividend;
-    let q = Math.floor(dividend/divisor);
-    let r = dividend % divisor;
-
-    // break into steps (simplified 2-step model)
-    let h = Math.floor(dividend/100);
-    let t = Math.floor((dividend%100)/10);
-
-    let d1 = Math.floor(h/divisor);
-    let m1 = d1*divisor;
-    let s1 = h-m1;
-    let b1 = s1*10 + t;
-
-    let d2 = Math.floor(b1/divisor);
-    let m2 = d2*divisor;
-    let s2 = b1-m2;
-    let b2 = s2*10 + (dividend%10);
-
-    steps = {d1,m1,s1,b1,d2,m2,s2,b2,q,r};
+    document.getElementById("divisor").innerText = divisor;
+    document.getElementById("dividend").innerText = dividend;
 
     document.getElementById("question").innerText =
-        dividend + " ÷ " + divisor;
+        "Solve using long division:";
 
     document.querySelectorAll("input").forEach(i=>i.value="");
-
-    document.getElementById("fb").innerText="";
-    document.getElementById("hint").innerText="";
-    document.getElementById("progress").innerText =
-        "Qn " + (qn+1) + "/10";
 }
 
 function check(){
-    let wrongStep = "";
+    let qInput =
+        document.getElementById("q1").value +
+        document.getElementById("q2").value +
+        document.getElementById("q3").value;
 
-    function val(id){ return parseInt(document.getElementById(id).value); }
+    let rInput = parseInt(document.getElementById("r").value);
 
-    if(val("d1")!==steps.d1) wrongStep="Step 1: Divide";
-    else if(val("m1")!==steps.m1) wrongStep="Step 1: Multiply";
-    else if(val("s1")!==steps.s1) wrongStep="Step 1: Subtract";
-    else if(val("b1")!==steps.b1) wrongStep="Step 1: Bring down";
-
-    else if(val("d2")!==steps.d2) wrongStep="Step 2: Divide";
-    else if(val("m2")!==steps.m2) wrongStep="Step 2: Multiply";
-    else if(val("s2")!==steps.s2) wrongStep="Step 2: Subtract";
-    else if(val("b2")!==steps.b2) wrongStep="Step 2: Bring down";
-
-    else if(val("q")!==steps.q) wrongStep="Final quotient";
-    else if(val("r")!==steps.r) wrongStep="Remainder";
-
-    if(wrongStep===""){
-        score++;
-        document.getElementById("fb").innerText="✅ Correct!";
+    if(parseInt(qInput) === quotient && rInput === remainder){
+        document.getElementById("fb").innerText = "✅ Correct!";
     } else {
-        document.getElementById("fb").innerText=
-            "❌ Check: " + wrongStep;
+        document.getElementById("fb").innerText =
+            "❌ Answer: " + quotient;
     }
-
-    qn++;
-    setTimeout(()=>{
-        if(qn<10) gen();
-        else end();
-    },1200);
 }
 
-function showHint(){
-    document.getElementById("hint").innerText =
-    "Hint: Divide first digit → Multiply → Subtract → Bring down next digit.";
-}
-
-function end(){
-    document.getElementById("game").style.display="none";
-    document.getElementById("end").style.display="block";
-    document.getElementById("score").innerText=
-        "Score: "+score+"/10";
-}
-
-function start(){
-    qn=0; score=0;
-    document.getElementById("game").style.display="block";
-    document.getElementById("end").style.display="none";
-    gen();
-}
-
-start();
+gen();
 </script>
+
 </body>
 </html>
