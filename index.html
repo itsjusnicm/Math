@@ -2,126 +2,163 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Primary 3 Long Division Game</title>
+<title>P3 Long Division Trainer</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        background: #f0f8ff;
-    }
-    .container {
-        margin-top: 50px;
-    }
-    h1 {
-        color: #2c3e50;
-    }
-    .question {
-        font-size: 28px;
-        margin: 20px;
-    }
-    input {
-        padding: 10px;
-        font-size: 18px;
-        width: 100px;
-        text-align: center;
-    }
-    button {
-        padding: 10px 20px;
-        font-size: 16px;
-        margin-top: 10px;
-        cursor: pointer;
-    }
-    .feedback {
-        font-size: 20px;
-        margin-top: 15px;
-    }
+body { font-family: Arial; text-align: center; background:#f4f9ff; }
+.container { margin-top: 30px; }
+.division-box {
+    display: inline-block;
+    text-align: left;
+    font-size: 22px;
+    margin: 20px;
+}
+.row { margin: 5px 0; }
+input {
+    width: 50px;
+    padding: 5px;
+    text-align: center;
+    font-size: 16px;
+}
+button { padding: 8px 15px; margin: 10px; }
+.feedback { font-size: 18px; margin-top: 10px; }
+.hint { color: #555; margin-top: 10px; }
 </style>
 </head>
+
 <body>
-
 <div class="container">
-    <h1>Long Division Game (P3)</h1>
-    <p>3-digit ÷ 1-digit • 10 Questions</p>
+<h1>Long Division Trainer (P3)</h1>
 
-    <div id="game">
-        <div class="question" id="question"></div>
-        <input type="number" id="answer" placeholder="Answer">
-        <br>
-        <button onclick="submitAnswer()">Submit</button>
-        <div class="feedback" id="feedback"></div>
-        <div id="progress"></div>
+<div id="game">
+    <div id="question" style="font-size:26px;"></div>
+
+    <div class="division-box">
+        <div class="row">Divide: <input id="d1"></div>
+        <div class="row">Multiply: <input id="m1"></div>
+        <div class="row">Subtract: <input id="s1"></div>
+        <div class="row">Bring down: <input id="b1"></div>
+
+        <hr>
+
+        <div class="row">Divide: <input id="d2"></div>
+        <div class="row">Multiply: <input id="m2"></div>
+        <div class="row">Subtract: <input id="s2"></div>
+        <div class="row">Bring down: <input id="b2"></div>
     </div>
 
-    <div id="result" style="display:none;">
-        <h2>Game Over!</h2>
-        <p id="score"></p>
-        <button onclick="startGame()">Play Again</button>
-    </div>
+    <h3>Final Answer</h3>
+    Quotient: <input id="q">
+    Remainder: <input id="r">
+
+    <br>
+    <button onclick="check()">Submit</button>
+    <button onclick="showHint()">Hint</button>
+
+    <div class="feedback" id="fb"></div>
+    <div class="hint" id="hint"></div>
+    <div id="progress"></div>
+</div>
+
+<div id="end" style="display:none;">
+    <h2>Game Over</h2>
+    <p id="score"></p>
+    <button onclick="start()">Restart</button>
 </div>
 
 <script>
-let questionCount = 0;
-let score = 0;
-let dividend, divisor, correctAnswer;
+let qn=0, score=0;
+let divisor, dividend;
 
-function generateQuestion() {
-    divisor = Math.floor(Math.random() * 8) + 2; // 2–9
-    correctAnswer = Math.floor(Math.random() * 90) + 10; // ensures 3-digit result
-    dividend = divisor * correctAnswer;
+let steps={};
+
+function gen(){
+    divisor = Math.floor(Math.random()*8)+2;
+    dividend = Math.floor(Math.random()*900)+100;
+
+    let temp = dividend;
+    let q = Math.floor(dividend/divisor);
+    let r = dividend % divisor;
+
+    // break into steps (simplified 2-step model)
+    let h = Math.floor(dividend/100);
+    let t = Math.floor((dividend%100)/10);
+
+    let d1 = Math.floor(h/divisor);
+    let m1 = d1*divisor;
+    let s1 = h-m1;
+    let b1 = s1*10 + t;
+
+    let d2 = Math.floor(b1/divisor);
+    let m2 = d2*divisor;
+    let s2 = b1-m2;
+    let b2 = s2*10 + (dividend%10);
+
+    steps = {d1,m1,s1,b1,d2,m2,s2,b2,q,r};
 
     document.getElementById("question").innerText =
-        dividend + " ÷ " + divisor + " = ?";
-    
-    document.getElementById("answer").value = "";
-    document.getElementById("feedback").innerText = "";
+        dividend + " ÷ " + divisor;
+
+    document.querySelectorAll("input").forEach(i=>i.value="");
+
+    document.getElementById("fb").innerText="";
+    document.getElementById("hint").innerText="";
     document.getElementById("progress").innerText =
-        "Question " + (questionCount + 1) + " of 10";
+        "Qn " + (qn+1) + "/10";
 }
 
-function submitAnswer() {
-    let userAnswer = parseInt(document.getElementById("answer").value);
+function check(){
+    let wrongStep = "";
 
-    if (isNaN(userAnswer)) {
-        document.getElementById("feedback").innerText = "Please enter a number!";
-        return;
-    }
+    function val(id){ return parseInt(document.getElementById(id).value); }
 
-    if (userAnswer === correctAnswer) {
+    if(val("d1")!==steps.d1) wrongStep="Step 1: Divide";
+    else if(val("m1")!==steps.m1) wrongStep="Step 1: Multiply";
+    else if(val("s1")!==steps.s1) wrongStep="Step 1: Subtract";
+    else if(val("b1")!==steps.b1) wrongStep="Step 1: Bring down";
+
+    else if(val("d2")!==steps.d2) wrongStep="Step 2: Divide";
+    else if(val("m2")!==steps.m2) wrongStep="Step 2: Multiply";
+    else if(val("s2")!==steps.s2) wrongStep="Step 2: Subtract";
+    else if(val("b2")!==steps.b2) wrongStep="Step 2: Bring down";
+
+    else if(val("q")!==steps.q) wrongStep="Final quotient";
+    else if(val("r")!==steps.r) wrongStep="Remainder";
+
+    if(wrongStep===""){
         score++;
-        document.getElementById("feedback").innerText = "✅ Correct!";
+        document.getElementById("fb").innerText="✅ Correct!";
     } else {
-        document.getElementById("feedback").innerText =
-            "❌ Wrong! Answer: " + correctAnswer;
+        document.getElementById("fb").innerText=
+            "❌ Check: " + wrongStep;
     }
 
-    questionCount++;
-
-    setTimeout(() => {
-        if (questionCount < 10) {
-            generateQuestion();
-        } else {
-            endGame();
-        }
-    }, 1000);
+    qn++;
+    setTimeout(()=>{
+        if(qn<10) gen();
+        else end();
+    },1200);
 }
 
-function endGame() {
-    document.getElementById("game").style.display = "none";
-    document.getElementById("result").style.display = "block";
-    document.getElementById("score").innerText =
-        "Your Score: " + score + " / 10";
+function showHint(){
+    document.getElementById("hint").innerText =
+    "Hint: Divide first digit → Multiply → Subtract → Bring down next digit.";
 }
 
-function startGame() {
-    questionCount = 0;
-    score = 0;
-    document.getElementById("game").style.display = "block";
-    document.getElementById("result").style.display = "none";
-    generateQuestion();
+function end(){
+    document.getElementById("game").style.display="none";
+    document.getElementById("end").style.display="block";
+    document.getElementById("score").innerText=
+        "Score: "+score+"/10";
 }
 
-startGame();
+function start(){
+    qn=0; score=0;
+    document.getElementById("game").style.display="block";
+    document.getElementById("end").style.display="none";
+    gen();
+}
+
+start();
 </script>
-
 </body>
 </html>
